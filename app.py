@@ -4,53 +4,44 @@ import sklearn
 import pickle
 import pandas as pd
 
+model = pickle.load((open("Flight_rf.pkl", "rb")))
+
 app = Flask(__name__)
-model = pickle.load(open("flight_rf.pkl", "rb"))
 
-
-
-@app.route("/")
-@cross_origin()
-def home():
-    return render_template("home.html")
-
-
-
+@app.route('/')
+def index():
+    return  render_template('home.html')
 
 @app.route("/predict", methods = ["GET", "POST"])
 @cross_origin()
 def predict():
     if request.method == "POST":
+        dep_date = request.form.get('Dep_Time')
 
-        # Date_of_Journey
-        date_dep = request.form["Dep_Time"]
-        Journey_day = int(pd.to_datetime(date_dep, format="%Y-%m-%dT%H:%M").day)
-        Journey_month = int(pd.to_datetime(date_dep, format ="%Y-%m-%dT%H:%M").month)
-        # print("Journey Date : ",Journey_day, Journey_month)
+        Journey_day = int(pd.to_datetime( dep_date, format= '%Y-%m-%dT%H:%M'  ).day)
+        Journey_month = int(pd.to_datetime(dep_date , format='%Y-%m-%dT%H:%M').month)
+        # print(Journey_day , Journey_month)
 
-        # Departure
-        Dep_Hr = int(pd.to_datetime(date_dep, format ="%Y-%m-%dT%H:%M").hour)
-        Dep_Min = int(pd.to_datetime(date_dep, format ="%Y-%m-%dT%H:%M").minute)
-        # print("Departure : ",Dep_Hr, Dep_Min)
+        dep_hour = int(pd.to_datetime( dep_date, format= '%Y-%m-%dT%H:%M'  ).hour)
+        dep_min = int(pd.to_datetime(dep_date , format='%Y-%m-%dT%H:%M').minute)
+        # print(dep_hour , dep_min)
 
-        # Arrival
-        date_arr = request.form["Arrival_Time"]
-        Arrival_Hr = int(pd.to_datetime(date_arr, format ="%Y-%m-%dT%H:%M").hour)
-        Arrival_Min = int(pd.to_datetime(date_arr, format ="%Y-%m-%dT%H:%M").minute)
-        # print("Arrival : ", Arrival_Hr, Arrival_Min)
+        arrival_date = request.form.get('Arrival_Time')
 
-        # Duration
-        Dur_Hr = abs(Arrival_Hr - Dep_Hr)
-        Dur_Min = abs(Arrival_Min - Dep_Min)
-        # print("Duration : ", Dur_Hr, Dur_Min)
+        arrival_hour = int(pd.to_datetime( arrival_date, format= '%Y-%m-%dT%H:%M'  ).hour)
+        arrival_min = int(pd.to_datetime( arrival_date, format= '%Y-%m-%dT%H:%M'  ).hour)
+        # print(arrival_hour , arrival_min)
 
-        # Total Stops
+        dur_hour = abs(arrival_hour - dep_hour) 
+        dur_min =  abs(arrival_min - dep_min)
+        # print(dur_hour , dur_min)
+
+
         Total_stops = int(request.form["stops"])
         # print(Total_stops)
 
-        # Airline
-        # AIR ASIA = 0 (not in column)
-        airline=request.form['airline']
+        airline=request.form.get('airline')
+
         if(airline=='Jet Airways'):
             Jet_Airways = 1
             IndiGo = 0
@@ -207,20 +198,7 @@ def predict():
             Vistara_Premium_economy = 0
             Trujet = 0
 
-        # print(Jet_Airways,
-        #     IndiGo,
-        #     Air_India,
-        #     Multiple_carriers,
-        #     SpiceJet,
-        #     Vistara,
-        #     GoAir,
-        #     Multiple_carriers_Premium_economy,
-        #     Jet_Airways_Business,
-        #     Vistara_Premium_economy,
-        #     Trujet)
-
-        # Source
-        # Banglore = 0 (not in column)
+        
         Source = request.form["Source"]
         if (Source == 'Delhi'):
             s_Delhi = 1
@@ -252,13 +230,9 @@ def predict():
             s_Mumbai = 0
             s_Chennai = 0
 
-        # print(s_Delhi,
-        #     s_Kolkata,
-        #     s_Mumbai,
-        #     s_Chennai)
+        # print(s_Delhi,s_Kolkata,s_Mumbai,s_Chennai)
 
-        # Destination
-        # Banglore = 0 (not in column)
+    
         Source = request.form["Destination"]
         if (Source == 'Cochin'):
             d_Cochin = 1
@@ -302,67 +276,16 @@ def predict():
             d_Hyderabad = 0
             d_Kolkata = 0
 
-        # print(
-        #     d_Cochin,
-        #     d_Delhi,
-        #     d_New_Delhi,
-        #     d_Hyderabad,
-        #     d_Kolkata
-        # )
-        
 
-    #     ['Total_Stops', 'Journey_day', 'Journey_month', 'Dep_Hr',
-    #    'Dep_Min', 'Arrival_Hr', 'Arrival_Min', 'Duration_hours',
-    #    'Duration_mins', 'Airline_Air India', 'Airline_GoAir', 'Airline_IndiGo',
-    #    'Airline_Jet Airways', 'Airline_Jet Airways Business',
-    #    'Airline_Multiple carriers',
-    #    'Airline_Multiple carriers Premium economy', 'Airline_SpiceJet',
-    #    'Airline_Trujet', 'Airline_Vistara', 'Airline_Vistara Premium economy',
-    #    'Source_Chennai', 'Source_Delhi', 'Source_Kolkata', 'Source_Mumbai',
-    #    'Destination_Cochin', 'Destination_Delhi', 'Destination_Hyderabad',
-    #    'Destination_Kolkata', 'Destination_New Delhi']
-        
-        prediction=model.predict([[
-            Total_stops,
-            Journey_day,
-            Journey_month,
-            Dep_Hr,
-            Dep_Min,
-            Arrival_Hr,
-            Arrival_Min,
-            Dur_Hr,
-            Dur_Min,
-            Air_India,
-            GoAir,
-            IndiGo,
-            Jet_Airways,
-            Jet_Airways_Business,
-            Multiple_carriers,
-            Multiple_carriers_Premium_economy,
-            SpiceJet,
-            Trujet,
-            Vistara,
-            Vistara_Premium_economy,
-            s_Chennai,
-            s_Delhi,
-            s_Kolkata,
-            s_Mumbai,
-            d_Cochin,
-            d_Delhi,
-            d_Hyderabad,
-            d_Kolkata,
-            d_New_Delhi
-        ]])
+        # print(d_Cochin,d_Delhi,d_New_Delhi,d_Hyderabad,d_Kolkata)
+
+        prediction = model.predict([[Total_stops,	Journey_day, Journey_month,	dep_hour, dep_min, arrival_hour, arrival_min, dur_hour,	dur_min, 
+                                   Air_India, GoAir, IndiGo, Jet_Airways, Jet_Airways_Business, Multiple_carriers, Multiple_carriers_Premium_economy, SpiceJet,
+                                    Trujet, Vistara, Vistara_Premium_economy, s_Chennai, s_Delhi, s_Kolkata, s_Mumbai, d_Cochin, d_Delhi, d_Hyderabad, d_Kolkata, d_New_Delhi ]])
 
         output=round(prediction[0],2)
 
-        return render_template('home.html',prediction_text="Your Flight price is Rs. {}".format(output))
+        return  render_template('home.html',prediction_text=f"Your Flight price is Rs. {output}")
 
 
-    return render_template("home.html")
-
-
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+app.run(debug=True) 
